@@ -190,7 +190,7 @@ void *nn_tilde_new(t_symbol *s, int argc, t_atom *argv) {
     } else {
       int maj = 0, min = 0, bug = 0;
       sys_getversion(&maj, &min, &bug);
-      pd_error(x, "[nn~]: no multichannel support in Pd %i.%i-%i, ignoring '-m' flag", 
+      pd_error(x, "nn~: no multichannel support in Pd %i.%i-%i, ignoring '-m' flag", 
               maj, min, bug);
     }
     argc--;
