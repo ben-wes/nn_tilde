@@ -351,16 +351,25 @@ void nn_tilde_bang(t_nn_tilde *x) {
   SETFLOAT(&enabled, x->m_enabled);
   outlet_anything(x->m_info_outlet, gensym("enabled"), 1, &enabled);
 
-  // Output available methods if model is loaded
-  if (x->m_model->is_loaded()) {
-    std::vector<std::string> methods = x->m_model->get_available_methods();
-    std::vector<t_atom> method_atoms(methods.size());    
-    for (size_t i = 0; i < methods.size(); i++)
-      SETSYMBOL(&method_atoms[i], gensym(methods[i].c_str()));
+  // Return here if no model is loaded
+  if (!x->m_model->is_loaded()) return;
 
-    outlet_anything(x->m_info_outlet, gensym("methods"), 
-                   methods.size(), method_atoms.data());
-  }
+  // Output dimensions
+  std::vector<std::string> methods = x->m_model->get_available_methods();
+  std::vector<t_atom> method_atoms(methods.size());    
+  for (size_t i = 0; i < methods.size(); i++)
+    SETSYMBOL(&method_atoms[i], gensym(methods[i].c_str()));
+
+  outlet_anything(x->m_info_outlet, gensym("methods"), 
+                 methods.size(), method_atoms.data());
+
+  // Output settable attributes
+  std::vector<t_atom> attr_atoms(x->settable_attributes.size());
+  for (size_t i = 0; i < x->settable_attributes.size(); i++)
+      SETSYMBOL(&attr_atoms[i], gensym(x->settable_attributes[i].c_str()));
+  
+  outlet_anything(x->m_info_outlet, gensym("attributes"), 
+                 attr_atoms.size(), attr_atoms.data());
 }
 
 void *nn_tilde_new(t_symbol *s, int argc, t_atom *argv) {
