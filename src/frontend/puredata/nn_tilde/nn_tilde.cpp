@@ -338,6 +338,17 @@ void nn_tilde_bang(t_nn_tilde *x) {
   SETFLOAT(dims, x->m_in_dim);
   SETFLOAT(dims + 1, x->m_out_dim);
   outlet_anything(x->m_info_outlet, gensym("dim"), 2, dims);
+
+  // Output available methods if model is loaded
+  if (x->m_model->is_loaded()) {
+    std::vector<std::string> methods = x->m_model->get_available_methods();
+    std::vector<t_atom> method_atoms(methods.size());    
+    for (size_t i = 0; i < methods.size(); i++)
+      SETSYMBOL(&method_atoms[i], gensym(methods[i].c_str()));
+
+    outlet_anything(x->m_info_outlet, gensym("methods"), 
+                   methods.size(), method_atoms.data());
+  }
 }
 
 void *nn_tilde_new(t_symbol *s, int argc, t_atom *argv) {
