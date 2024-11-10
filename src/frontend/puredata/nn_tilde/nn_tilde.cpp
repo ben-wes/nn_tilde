@@ -346,6 +346,17 @@ void nn_tilde_bang(t_nn_tilde *x) {
   SETFLOAT(dims + 1, x->m_out_dim);
   outlet_anything(x->m_info_outlet, gensym("dim"), 2, dims);
 
+  // Output ratios
+  t_atom ratios[2];
+  SETFLOAT(ratios, x->m_in_ratio);
+  SETFLOAT(ratios + 1, x->m_out_ratio);
+  outlet_anything(x->m_info_outlet, gensym("ratio"), 2, ratios);
+
+  // Output buffer size
+  t_atom bufsize;
+  SETFLOAT(&bufsize, x->m_buffer_size);
+  outlet_anything(x->m_info_outlet, gensym("bufsize"), 1, &bufsize);
+
   // Output "enabled" status
   t_atom enabled;
   SETFLOAT(&enabled, x->m_enabled);
