@@ -398,6 +398,8 @@ void *nn_tilde_new(t_symbol *s, int argc, t_atom *argv) {
   if (argc > 0 && argv->a_type == A_SYMBOL && atom_getsymbol(argv) == gensym("-m")) {
     if (g_signal_setmultiout) {
       x->m_multichannel = 1;
+      // Add info outlet in multichannel mode
+      x->m_info_outlet = outlet_new(&x->x_obj, &s_anything);
     } else {
       int maj = 0, min = 0, bug = 0;
       sys_getversion(&maj, &min, &bug);
@@ -408,12 +410,7 @@ void *nn_tilde_new(t_symbol *s, int argc, t_atom *argv) {
     argv++;
   }
 
-  if (!argc) {
-    // Create info outlet last (rightmost) for default 1-in/1-out case
-    if (x->m_multichannel)
-      x->m_info_outlet = outlet_new(&x->x_obj, &s_anything);
-    return (void *)x;
-  }
+  if (!argc) return (void *)x;
 
   x->m_path = atom_getsymbol(argv);
   if (argc > 1) x->m_method = atom_gensym(argv + 1);
@@ -427,9 +424,6 @@ void *nn_tilde_new(t_symbol *s, int argc, t_atom *argv) {
       for (int i(1); i < x->m_out_dim; i++)
         outlet_new(&x->x_obj, &s_signal);
     }
-    // Create info outlet last (rightmost) after all signal outlets are created
-    if (x->m_multichannel)
-      x->m_info_outlet = outlet_new(&x->x_obj, &s_anything);
   }
 
   return (void *)x;
