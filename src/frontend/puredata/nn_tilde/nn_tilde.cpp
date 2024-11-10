@@ -346,6 +346,11 @@ void nn_tilde_bang(t_nn_tilde *x) {
   SETFLOAT(dims + 1, x->m_out_dim);
   outlet_anything(x->m_info_outlet, gensym("dim"), 2, dims);
 
+  // Output "enabled" status
+  t_atom enabled;
+  SETFLOAT(&enabled, x->m_enabled);
+  outlet_anything(x->m_info_outlet, gensym("enabled"), 1, &enabled);
+
   // Output available methods if model is loaded
   if (x->m_model->is_loaded()) {
     std::vector<std::string> methods = x->m_model->get_available_methods();
