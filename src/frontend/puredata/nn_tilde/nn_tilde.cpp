@@ -437,7 +437,7 @@ void *nn_tilde_new(t_symbol *s, int argc, t_atom *argv) {
 
 void nn_tilde_load(t_nn_tilde *x, t_symbol *s) {
   if (!x->m_multichannel) {
-    pd_error(x, "nn~: load message is only supported in multichannel mode");
+    pd_error(x, "nn~: dynamically loading models is only supported in multichannel mode");
     return;
   }
 
@@ -448,11 +448,8 @@ void nn_tilde_load(t_nn_tilde *x, t_symbol *s) {
   }
 
   // Load the new model
-  if (nn_tilde_load_model(x, s->s_name)) {
-    if (x->m_outchannels_changed)
+  if (nn_tilde_load_model(x, s->s_name) && x->m_outchannels_changed)
       canvas_update_dsp();
-    post("loaded model %s", s->s_name);
-  }
 }
 
 void nn_tilde_enable(t_nn_tilde *x, t_floatarg arg) { x->m_enabled = int(arg); }
