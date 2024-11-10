@@ -340,6 +340,14 @@ void nn_tilde_bang(t_nn_tilde *x) {
     return;
   }
 
+  // Output "is_loaded" status
+  t_atom is_loaded;
+  SETFLOAT(&is_loaded, x->m_model->is_loaded());
+  outlet_anything(x->m_info_outlet, gensym("is_loaded"), 1, &is_loaded);
+
+  // Return if no model is loaded
+  if (!x->m_model->is_loaded()) return;
+
   // Output dimensions
   t_atom dims[2];
   SETFLOAT(dims, x->m_in_dim);
@@ -362,8 +370,9 @@ void nn_tilde_bang(t_nn_tilde *x) {
   SETFLOAT(&enabled, x->m_enabled);
   outlet_anything(x->m_info_outlet, gensym("enabled"), 1, &enabled);
 
-  // Return here if no model is loaded
-  if (!x->m_model->is_loaded()) return;
+  t_atom model;
+  SETSYMBOL(&model, x->m_path);
+  outlet_anything(x->m_info_outlet, gensym("model"), 1, &model);
 
   // Output dimensions
   std::vector<std::string> methods = x->m_model->get_available_methods();
