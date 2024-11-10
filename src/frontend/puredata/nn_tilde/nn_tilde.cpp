@@ -324,6 +324,13 @@ bool nn_tilde_load_model(t_nn_tilde *x, const char *path) {
   x->m_out_ratio = new_out_ratio;
   x->settable_attributes = x->m_model->get_settable_attributes();
 
+  // Output loaded message if in multichannel mode
+  if (x->m_multichannel) {
+    t_atom path_atom;
+    SETSYMBOL(&path_atom, x->m_path);
+    outlet_anything(x->m_info_outlet, gensym("loaded"), 1, &path_atom);
+  }
+
   return true;
 }
 
