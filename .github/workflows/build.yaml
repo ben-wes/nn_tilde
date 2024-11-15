@@ -120,11 +120,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ../src \
-            -DCMAKE_PREFIX_PATH=${{ github.workspace }}/libtorch \
-            -DPUREDATA_INCLUDE_DIR=${{ github.workspace }}/pd/src \
-            -DPUREDATA_BIN_DIR=${{ github.workspace }}/pd/bin \
-            -A x64
+          cmake ../src -DCMAKE_PREFIX_PATH=${{ github.workspace }}/libtorch -DPUREDATA_INCLUDE_DIR=${{ github.workspace }}/pd/src -DPUREDATA_BIN_DIR=${{ github.workspace }}/pd/bin -A x64
           cmake --build . --config Release
       # - name: Max/MSP Package creation
       #   run: |
