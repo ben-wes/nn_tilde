@@ -181,23 +181,9 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: '12.4.0'
-          method: 'network'
-          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "visual_studio_integration", "nvtx"]'
-          # sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "nvtx", "visual_studio_integration", "nvfatbin", "thrust", "visual_profiler", "visual_studio_integration"]'
-
-      - name: Setup NVTX from CUDA 11.8
-        if: matrix.cuda == 'cuda'
-        run: |
-          # Download and install CUDA 11.8 just for NVTX
-          curl -L https://developer.download.nvidia.com/compute/cuda/11.8.0/network_installers/cuda_11.8.0_windows_network.exe -o cuda118.exe
-          Start-Process -FilePath .\cuda118.exe -Wait -NoNewWindow #  -ArgumentList "-s nvtx_11.8"
-          
-          echo "Searching for NVTX lib in CUDA 11.8..."
-          Get-ChildItem -Path "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8" -Recurse -Filter "*nvToolsExt*.lib"
-          Get-ChildItem -Path "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8" -Recurse -Filter "*nvtx*.lib"
-          
-          echo "Listing CUDA 11.8 lib directory..."
-          Get-ChildItem "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib" -Recurse
+          method: 'local'
+          use-local-cache: true
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "visual_studio_integration"]'
 
       - name: Setup CUDA integration
         if: matrix.cuda == 'cuda'
@@ -210,41 +196,29 @@ jobs:
           $sourcePath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.4\extras\visual_studio_integration\MSBuildExtensions"
           $targetPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations"
 
-          # Debug output
-          echo "Checking source path..."
           if (Test-Path $sourcePath) {
-            echo "Source path contents:"
-            Get-ChildItem $sourcePath
-          } else {
-            echo "Source path does not exist: $sourcePath"
-          }
-
-          echo "Checking target path..."
-          if (Test-Path $targetPath) {
-            echo "Target path exists"
             Copy-Item -Path "$sourcePath\*" -Destination $targetPath -Force
             echo "Copied CUDA build files to $targetPath"
-            echo "Target path contents after copy:"
-            Get-ChildItem $targetPath
-          } else {
-            echo "Target path does not exist: $targetPath"
           }
 
-      - name: Verify CUDA
+      - name: Get PyTorch Info
         if: matrix.cuda == 'cuda'
         run: |
-          echo "Verifying CUDA setup..."
-          nvcc --version
+          python3 -m pip install torch --index-url https://download.pytorch.org/whl/cu124 --no-deps
+          python3 -c "from torch import version; print('PYTORCH_VERSION=' + version.__version__.split('+')[0]); print('PYTORCH_CUDA_VERSION=' + version.cuda)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Setup libtorch
         run: |
-          if ("${{ matrix.cuda }}" -eq "cuda") {
-            $CUDA_URL="https://download.pytorch.org/libtorch/cu124/libtorch-win-shared-with-deps-2.5.1%2Bcu124.zip"
+          if (${{ matrix.cuda == 'cuda' }}) {
+            $CUDA_URL = "https://download.pytorch.org/libtorch/cu124/libtorch-win-shared-with-deps-2.5.1%2Bcu124.zip"
           } else {
-            $CUDA_URL="https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-2.5.1%2Bcpu.zip"
+            $CUDA_URL = "https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-2.5.1%2Bcpu.zip"
           }
+          echo "Downloading: $CUDA_URL"
           Invoke-WebRequest -Uri $CUDA_URL -OutFile libtorch.zip
           Expand-Archive -Path libtorch.zip -DestinationPath .
+          echo "libtorch contents:"
+          Get-ChildItem libtorch -Recurse | Select-Object FullName
 
       - name: Setup PureData
         run: |
@@ -259,13 +233,29 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ../src `
-            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/libtorch" `
-            -DPUREDATA_INCLUDE_DIR="${{ github.workspace }}/pd/src" `
-            -DPUREDATA_BIN_DIR="${{ github.workspace }}/pd/bin" `
-            -A x64 `
-            ${{ matrix.cuda == 'cuda' && '-DCMAKE_GENERATOR_TOOLSET="cuda=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.4" -DCMAKE_CUDA_FLAGS="-DNVTX_ENABLE=0" -DCMAKE_CXX_FLAGS="/DNVTX_ENABLE=0"' || '' }}
-            # -DCUDACXX="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.4/bin/nvcc" 
+          echo "PYTORCH_VERSION: $env:PYTORCH_VERSION"
+          echo "PYTORCH_CUDA_VERSION: $env:PYTORCH_CUDA_VERSION"
+          
+          $cmakeArgs = @(
+            "../src"
+            "-DCMAKE_PREFIX_PATH=${{ github.workspace }}/libtorch"
+            "-DPUREDATA_INCLUDE_DIR=${{ github.workspace }}/pd/src"
+            "-DPUREDATA_BIN_DIR=${{ github.workspace }}/pd/bin"
+            "-A" "x64"
+          )
+          
+          if ("${{ matrix.cuda }}" -eq "cuda") {
+            $cmakeArgs += @(
+              "-DPYTORCH_VERSION=$env:PYTORCH_VERSION"
+              "-DPYTORCH_CUDA_VERSION=$env:PYTORCH_CUDA_VERSION"
+              "-DCMAKE_CXX_FLAGS=-DTORCH_CUDA_USE_NVTX3"
+            )
+          }
+          
+          echo "CMake arguments:"
+          $cmakeArgs | ForEach-Object { $_ }
+          
+          & cmake $cmakeArgs
           cmake --build . --config Release
 
       - name: PureData Package Creation

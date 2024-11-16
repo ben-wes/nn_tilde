@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(backend)
 
 if(
-    PYTORCH_VERSION VERSION_GREATER_EQUAL 2.5.0 AND
-    PYTORCH_CUDA_VERSION VERSION_GREATER_EQUAL 12
+    PYTORCH_VERSION VERSION_GREATER_EQUAL "2.5.0" AND
+    PYTORCH_CUDA_VERSION VERSION_GREATER_EQUAL "12"
 )
     message(STATUS "PyTorch NVTX headers workaround: Yes")
     # only do this if nvToolsExt is not defined and CUDA::nvtx3 exists
