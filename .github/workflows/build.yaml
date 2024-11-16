@@ -9,7 +9,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-      - run: git submodule update --init --recursive
+        with:
+          submodules: true
       - name: Setup torch
         run: |
           curl -L https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-2.5.1.zip -o libtorch.zip
@@ -43,7 +44,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-      - run: git submodule update --init --recursive
+        with:
+          submodules: true
       - name: Setup torch
         run: |
           curl -L https://download.pytorch.org/libtorch/cpu/libtorch-macos-x86_64-2.2.2.zip -o libtorch.zip
@@ -162,8 +164,8 @@ jobs:
         cuda: [cpu, cuda]
     steps:
       - uses: actions/checkout@v4
-
-      - run: git submodule update --init --recursive
+        with:
+          submodules: true
 
       - name: Setup Visual Studio
         uses: microsoft/setup-msbuild@v1.3.1
