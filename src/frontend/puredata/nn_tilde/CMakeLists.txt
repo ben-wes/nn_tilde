@@ -72,7 +72,11 @@ if (MSVC)
         "c10.dll"
         "fbgemm.dll"
         "libiomp5md.dll"
+        "libiompstubs5md.dll"
         "uv.dll"
+        "asmjit.dll"
+        "torch.dll"
+        "torch_global_deps.dll"
     )
 
     # Multiple checks for CUDA support
