@@ -113,17 +113,22 @@ if (MSVC)
         "torch_global_deps.dll"
     )
 
-    # Multiple checks for CUDA support
-    if(CUDA_FOUND OR EXISTS "${TORCH_INSTALL_PREFIX}/lib/torch_cuda.dll")
-        message(STATUS "CUDA support detected - Including CUDA DLLs")
-        message(STATUS "CUDA_FOUND: ${CUDA_FOUND}")
-        message(STATUS "TORCH_INSTALL_PREFIX: ${TORCH_INSTALL_PREFIX}")
-
-        list(APPEND REQUIRED_DLLS
-            "torch_cuda.dll"
-            "c10_cuda.dll"
-        )
-    else()
+	if(CUDA_FOUND OR EXISTS "${TORCH_INSTALL_PREFIX}/lib/torch_cuda.dll")
+	    list(APPEND REQUIRED_DLLS
+	        "torch_cuda.dll"
+	        "c10_cuda.dll"
+	    )
+	    
+	    # Only add CUDA runtime DLLs if they exist
+	    foreach(CUDA_DLL 
+	        "cudart64_12.dll"
+	        "cublas64_12.dll"
+	        "cublasLt64_12.dll")
+	        if(EXISTS "${TORCH_INSTALL_PREFIX}/lib/${CUDA_DLL}")
+	            list(APPEND REQUIRED_DLLS "${CUDA_DLL}")
+	        endif()
+	    endforeach()
+	else()
         message(STATUS "No CUDA support detected - Skipping CUDA DLLs")
     endif()
 
