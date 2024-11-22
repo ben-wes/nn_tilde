@@ -176,8 +176,8 @@ jobs:
           cuda: '12.4.0'
           method: 'local'
           use-local-cache: true
-          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "visual_studio_integration"]'
-          # sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "cusolver", "cusolver_dev", "visual_studio_integration"]'
+          # sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "visual_studio_integration"]'
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "cusparse", "cusparse_dev", "cufft", "cufft_dev", "cusolver", "cusolver_dev", "visual_studio_integration"]'
 
       - name: Install NvToolsExt
         if: matrix.cuda == 'cuda'
