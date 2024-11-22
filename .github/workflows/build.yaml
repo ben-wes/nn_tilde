@@ -166,18 +166,18 @@ jobs:
           submodules: true
 
       - name: Setup Visual Studio
-        uses: microsoft/setup-msbuild@v1.3.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Setup CUDA
         if: matrix.cuda == 'cuda'
-        uses: Jimver/cuda-toolkit@v0.2.18
+        uses: Jimver/cuda-toolkit@v0.2.19
         id: cuda-toolkit
         with:
           cuda: '12.4.0'
           method: 'local'
           use-local-cache: true
           # sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "visual_studio_integration"]'
-          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "cusparse", "cusparse_dev", "cufft", "cufft_dev", "cusolver", "cusolver_dev", "visual_studio_integration"]'
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "cusparse", "cusparse_dev", "cufft", "cufft_dev", "cusolver", "cusolver_dev", "nvrtc", "visual_studio_integration"]'
 
       - name: Install NvToolsExt
         if: matrix.cuda == 'cuda'
@@ -211,7 +211,7 @@ jobs:
         run: |
           mkdir pd
           cd pd
-          curl -L https://msp.puredata.info/Software/pd-0.55-0.msw.zip -o pd.zip
+          curl -L https://msp.puredata.info/Software/pd-0.55-2.msw.zip -o pd.zip
           unzip pd.zip
           mv pd*/src .
           mv pd*/bin .
