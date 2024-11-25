@@ -174,9 +174,8 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: '12.4.0'
-          method: 'local'
+          method: 'network'
           use-local-cache: true
-          # sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "visual_studio_integration"]'
           sub-packages: '["nvcc", "cudart", "nvrtc", "visual_studio_integration"]'
           # sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "cusparse", "cusparse_dev", "cufft", "cufft_dev", "cusolver", "cusolver_dev", "nvrtc", "visual_studio_integration"]'
 
