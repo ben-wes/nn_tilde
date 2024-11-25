@@ -134,6 +134,7 @@ if(MSVC)
             "cudnn64_9.dll"
             "cudnn_graph64_9.dll"
             "cudnn_engines_precompiled64_9.dll"
+            "cudnn_heuristic64_9.dll"
             "nvrtc64_120_0.dll"
             "nvrtc-builtins64_120.dll"
             "cudadevrt.dll"
