@@ -374,8 +374,10 @@ jobs:
               filename=$(basename "$dek_file")
               echo -e "#### \`$filename\`" | tee -a $GITHUB_STEP_SUMMARY
               echo '```' | tee -a $GITHUB_STEP_SUMMARY
-              unzip -l "$dek_file" | sed '1,3d;$d' | tee -a $GITHUB_STEP_SUMMARY
-              # unzip -l "$dek_file" | awk 'NR>3 {print $4}' | sed '/^$/d' | sort | tee -a $GITHUB_STEP_SUMMARY
+              unzip -l "$dek_file" | head -n 2 | tee -a $GITHUB_STEP_SUMMARY
+              unzip -l "$dek_file" | sed '1,3d;$d' | awk '{printf "%10d  %s  %s  %s\n", $1, $2, $3, $4}' | tee -a $GITHUB_STEP_SUMMARY
+              total=$(unzip -l "$dek_file" | tail -n 1 | awk '{print $1}')
+              echo "Total: $total bytes" | tee -a $GITHUB_STEP_SUMMARY
               echo '```' | tee -a $GITHUB_STEP_SUMMARY
             done
           done
@@ -395,8 +397,10 @@ jobs:
               filename=$(basename "$dek_file")
               echo -e "#### \`$filename\`" | tee -a $GITHUB_STEP_SUMMARY
               echo '```' | tee -a $GITHUB_STEP_SUMMARY
-              unzip -l "$dek_file" | sed '1,3d;$d' | tee -a $GITHUB_STEP_SUMMARY
-              # unzip -l "$dek_file" | awk 'NR>3 {print $4}' | sed '/^$/d' | sort | tee -a $GITHUB_STEP_SUMMARY
+              unzip -l "$dek_file" | head -n 2 | tee -a $GITHUB_STEP_SUMMARY
+              unzip -l "$dek_file" | sed '1,3d;$d' | awk '{printf "%10d  %s  %s  %s\n", $1, $2, $3, $4}' | tee -a $GITHUB_STEP_SUMMARY
+              total=$(unzip -l "$dek_file" | tail -n 1 | awk '{print $1}')
+              echo "Total: $total bytes" | tee -a $GITHUB_STEP_SUMMARY
               echo '```' | tee -a $GITHUB_STEP_SUMMARY
             done
           done
