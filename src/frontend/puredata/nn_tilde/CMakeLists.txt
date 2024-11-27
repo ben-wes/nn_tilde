@@ -97,10 +97,20 @@ if (UNIX AND NOT APPLE)
     endforeach()
     add_dependencies(nn copy_torch_libs)
 
+    # Set proper RPATH
+    set_target_properties(nn PROPERTIES 
+        PREFIX ""
+        SUFFIX "~.pd_linux"
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH_USE_LINK_PATH FALSE
+        INSTALL_RPATH "$ORIGIN"
+        # Force overwrite of RPATH
+        LINK_FLAGS "-Wl,--disable-new-dtags"
+    )
+
     # Add libgomp as a link dependency
     target_link_libraries(nn PRIVATE gomp)
 endif()
-
 
 if(MSVC)
     # Base DLLs (these work for CPU version)

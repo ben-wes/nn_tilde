@@ -93,9 +93,9 @@ jobs:
           sudo apt-get install -y libgomp1
           CUDA_URL=""
           if [ "${{ matrix.cuda }}" = "cuda" ]; then
-            CUDA_URL="https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-2.5.1%2Bcu121.zip"
+            CUDA_URL="https://download.pytorch.org/libtorch/cu115/libtorch-shared-with-deps-1.11.0%2Bcu115.zip"
           else
-            CUDA_URL="https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.5.1%2Bcpu.zip"
+            CUDA_URL="https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-2.5.1%2Bcpu.zip"
           fi
           curl -L $CUDA_URL -o libtorch.zip
           unzip libtorch.zip
@@ -108,7 +108,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-            libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev libgomp1
+            libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev
           mkdir -p torch_arm64
           cd torch_arm64
           python3 -m pip download torch==2.5.1 \
@@ -126,15 +126,20 @@ jobs:
           echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
           echo "CXX=aarch64-linux-gnu-g++" >> $GITHUB_ENV
           echo "RANLIB=aarch64-linux-gnu-ranlib" >> $GITHUB_ENV
+
       - name: Setup puredata
         run: |
           mkdir puredata_include
           curl -L https://raw.githubusercontent.com/pure-data/pure-data/master/src/m_pd.h -o puredata_include/m_pd.h
+
       - name: Setup CUDA dependencies
         if: matrix.arch == 'amd64' && matrix.cuda == 'cuda'
         run: |
           sudo apt-get update
-          sudo apt-get install -y nvidia-cuda-toolkit
+          sudo apt-get install --no-install-recommends nvidia-cuda-toolkit libcudnn8 libcudnn8-dev
+          echo "CUDA_HOME=/usr" >> $GITHUB_ENV
+          echo "CUDA_TOOLKIT_ROOT_DIR=/usr" >> $GITHUB_ENV
+
       - name: Build
         run: |
           mkdir build
@@ -144,34 +149,61 @@ jobs:
             -DPUREDATA_INCLUDE_DIR=${{ github.workspace }}/puredata_include \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER=${{ env.CC }} \
-            -DCMAKE_CXX_COMPILER=${{ env.CXX }}
+            -DCMAKE_CXX_COMPILER=${{ env.CXX }} \
+            -DCUDA_TOOLKIT_ROOT_DIR=${{ env.CUDA_TOOLKIT_ROOT_DIR }}
           make
           ${{ env.RANLIB }} backend/libbackend.a
           make
 
       - name: PureData Package creation
         run: |
+          echo "Debug: Checking build directory structure..."
+          ls -R build/
+          
           mkdir -p nn_tilde
-          mv build/frontend/puredata/nn~.pd_linux nn_tilde/
-          mv build/lib*.so* nn_tilde/
-          # Find and copy the exact libgomp that the system is using
-          LIBGOMP_PATH=$(ldd build/frontend/puredata/nn~.pd_linux | grep libgomp | awk '{print $3}')
-          if [ ! -z "$LIBGOMP_PATH" ]; then
-            cp "$LIBGOMP_PATH" nn_tilde/libgomp-98b21ff3.so.1
-          else
-            echo "Warning: Could not find libgomp dependency in ldd output"
-            # Fallback to system path
-            cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-98b21ff3.so.1
-          fi
-          # Optional: Strip debug symbols to reduce size
-          strip nn_tilde/nn~.pd_linux
-          strip nn_tilde/lib*.so*
+          
+          # Move all built files
+          mv build/frontend/puredata/nn_tilde/nn~.pd_linux nn_tilde/
+          mv build/frontend/puredata/nn_tilde/nn~-help.pd nn_tilde/
+          mv build/frontend/puredata/nn_tilde/lib*.so* nn_tilde/
+          
+          if [ "${{ matrix.arch }}" = "amd64" ]; then
+            # AMD64-specific handling
+            cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-a34b3233.so.1
 
-      - name: Upload binaries
-        uses: actions/upload-artifact@v4
-        with:
-          name: nn_tilde-linux_${{ matrix.arch }}_${{ matrix.cuda }}
-          path: nn_tilde
+            strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
+            echo "Checking AMD64 package dependencies:"
+            ldd nn_tilde/nn~.pd_linux || true
+            
+            if [ "${{ matrix.cuda }}" = "cuda" ]; then
+                echo -e "\nDetailed CUDA dependency information:"
+                echo "For nn~.pd_linux:"
+                readelf -d nn_tilde/nn~.pd_linux
+                echo -e "\nFor libtorch_cuda.so:"
+                readelf -d nn_tilde/libtorch_cuda.so
+                echo -e "\nFor libtorch_cpu.so:"
+                readelf -d nn_tilde/libtorch_cpu.so
+                echo -e "\nRPATH information:"
+                readelf -d nn_tilde/nn~.pd_linux | grep -E "RPATH|RUNPATH"
+            fi
+          else
+            # ARM64-specific handling
+            echo "Debug: Looking for OpenBLAS library..."
+            ls -la ${{ env.TORCH_PATH }}/lib/
+            aarch64-linux-gnu-strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
+            echo "Checking ARM64 package dependencies:"
+            echo "Dependencies for nn~.pd_linux:"
+            aarch64-linux-gnu-readelf -d nn_tilde/nn~.pd_linux
+            
+            # Check all .so files
+            for lib in nn_tilde/*.so; do
+              echo -e "\nDependencies for $(basename $lib):"
+              aarch64-linux-gnu-readelf -d "$lib"
+            done
+          fi
+          
+          echo "Final package contents:"
+          ls -la nn_tilde/
 
   windows-amd64-build:
     runs-on: windows-latest
