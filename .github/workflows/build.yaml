@@ -75,14 +75,24 @@ jobs:
 
   linux-amd64-cuda-build:
     runs-on: ubuntu-latest
-    container: nvidia/cuda:12.4.0-devel-ubuntu22.04
+    container: nvidia/cuda:12.1.0-devel-ubuntu22.04
     steps:
       - name: Setup tools
         run: |
+          export DEBIAN_FRONTEND=noninteractive
           apt-get update
-          apt-get install -y curl unzip cmake build-essential libgomp1 gcc g++
+          apt-get install -y \
+            curl \
+            unzip \
+            cmake \
+            build-essential \
+            libgomp1 \
+            gcc \
+            g++ \
+            tzdata
           echo "CC=gcc" >> $GITHUB_ENV
           echo "CXX=g++" >> $GITHUB_ENV
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -101,12 +111,12 @@ jobs:
           
       - name: Setup torch for AMD64
         run: |
-          CUDA_URL="https://download.pytorch.org/libtorch/cu124/libtorch-shared-with-deps-2.5.1%2Bcu124.zip"
+          apt-get update
+          apt-get install -y libgomp1
+          CUDA_URL="https://download.pytorch.org/libtorch/cu121/libtorch-shared-with-deps-2.5.1%2Bcu121.zip"
           curl -L $CUDA_URL -o libtorch.zip
           unzip libtorch.zip
           echo "TORCH_PATH=/__w/nn_tilde/nn_tilde/libtorch" >> $GITHUB_ENV
-          mkdir -p /usr/local/share/cmake/Torch
-          ln -sf /__w/nn_tilde/nn_tilde/libtorch/share/cmake/Torch/* /usr/local/share/cmake/Torch/
 
       - name: Setup puredata
         run: |
@@ -115,10 +125,7 @@ jobs:
 
       - name: Debug library alignment
         run: |
-          # Check CUDA environment
           nvcc --version
-          
-          # Check alignments
           echo "System page size:"
           getconf PAGE_SIZE
           
@@ -142,7 +149,6 @@ jobs:
 
       - name: PureData Package creation
         run: |
-          # Install patchelf
           apt-get install -y patchelf
           
           mkdir -p nn_tilde
@@ -157,21 +163,7 @@ jobs:
           cp $TORCH_PATH/lib/libcublas-*.so.* nn_tilde/
           cp $TORCH_PATH/lib/libcublasLt-*.so.* nn_tilde/
           
-          # Try to fix alignment with patchelf
-          patchelf --set-rpath '$ORIGIN' nn_tilde/libtorch_cuda.so
-          patchelf --page-size 4096 nn_tilde/libtorch_cuda.so
-
           cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-a34b3233.so.1
-
-          strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
-          
-          # Test with LD_BIND_NOW=1
-          echo "Testing library loading with LD_BIND_NOW=1:"
-          LD_BIND_NOW=1 ldd nn_tilde/nn~.pd_linux || true
-          
-          # Original dependency checks for comparison
-          echo "Original library loading check:"
-          ldd nn_tilde/nn~.pd_linux || true
 
           # First check PyTorch's original library
           echo "Original PyTorch CUDA library segments:"
