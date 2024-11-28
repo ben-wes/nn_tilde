@@ -50,23 +50,13 @@ if (APPLE)
 endif()
 
 if (UNIX AND NOT APPLE)
-    # Define essential libraries to copy
+    # Define essential libraries to copy - only the basic ones
     set(ESSENTIAL_LIBS
         "libtorch.so"
         "libtorch_cpu.so"
         "libc10.so"
         "libtorch_global_deps.so"
     )
-
-    if(CUDA_FOUND)
-        list(APPEND ESSENTIAL_LIBS
-            "libtorch_cuda.so"
-            "libc10_cuda.so"
-            # "libtorch_cuda_linalg.so"
-            "libcaffe2_nvrtc.so"
-            "libnvrtc-builtins-6c5639ce.so.12.1" # FIXME
-        )
-    endif()
 
     # Copy essential Torch libraries
     add_custom_target(copy_torch_libs)
@@ -86,10 +76,8 @@ if (UNIX AND NOT APPLE)
         PREFIX ""
         SUFFIX "~.pd_linux"
         BUILD_WITH_INSTALL_RPATH TRUE
-        INSTALL_RPATH_USE_LINK_PATH FALSE
+        INSTALL_RPATH_USE_LINK_PATH TRUE
         INSTALL_RPATH "$ORIGIN"
-        # Force overwrite of RPATH
-        LINK_FLAGS "-Wl,--disable-new-dtags"
     )
 
     # Add libgomp as a link dependency

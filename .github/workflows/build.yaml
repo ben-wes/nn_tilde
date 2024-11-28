@@ -75,7 +75,7 @@ jobs:
 
   linux-amd64-cuda-build:
     runs-on: ubuntu-latest
-    container: nvidia/cuda:12.1.0-devel-ubuntu22.04
+    container: nvidia/cuda:12.4.1-devel-ubuntu22.04
     steps:
       - name: Setup tools
         run: |
@@ -113,7 +113,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y libgomp1
-          CUDA_URL="https://download.pytorch.org/libtorch/cu121/libtorch-shared-with-deps-2.1.0%2Bcu121.zip"
+          CUDA_URL="https://download.pytorch.org/libtorch/cu124/libtorch-shared-with-deps-2.5.1%2Bcu124.zip"
           curl -L $CUDA_URL -o libtorch.zip
           unzip libtorch.zip
           echo "TORCH_PATH=/__w/nn_tilde/nn_tilde/libtorch" >> $GITHUB_ENV
@@ -169,13 +169,13 @@ jobs:
           cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-a34b3233.so.1
 
           # First check PyTorch's original library
-          echo "Original PyTorch CUDA library segments:"
-          readelf -l $TORCH_PATH/lib/libtorch_cuda.so | grep LOAD
+          # echo "Original PyTorch CUDA library segments:"
+          # readelf -l $TORCH_PATH/lib/libtorch_cuda.so | grep LOAD
 
           # echo "Checking library alignments after copying:"
-          readelf -l nn_tilde/libtorch_cuda.so | grep LOAD
-          echo "Looking for non-aligned segments:"
-          readelf -l nn_tilde/libtorch_cuda.so | grep LOAD | awk '{if ($2 % 4096 != 0) print $0}'
+          # readelf -l nn_tilde/libtorch_cuda.so | grep LOAD
+          # echo "Looking for non-aligned segments:"
+          # readelf -l nn_tilde/libtorch_cuda.so | grep LOAD | awk '{if ($2 % 4096 != 0) print $0}'
 
           strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
           echo "Checking AMD64 package dependencies:"
@@ -184,10 +184,10 @@ jobs:
           echo -e "\nDetailed CUDA dependency information:"
           echo "For nn~.pd_linux:"
           readelf -d nn_tilde/nn~.pd_linux
-          echo -e "\nFor libtorch_cuda.so:"
-          readelf -d nn_tilde/libtorch_cuda.so
-          echo -e "\nFor libtorch_cpu.so:"
-          readelf -d nn_tilde/libtorch_cpu.so
+          # echo -e "\nFor libtorch_cuda.so:"
+          # readelf -d nn_tilde/libtorch_cuda.so
+          # echo -e "\nFor libtorch_cpu.so:"
+          # readelf -d nn_tilde/libtorch_cpu.so
           echo -e "\nRPATH information:"
           readelf -d nn_tilde/nn~.pd_linux | grep -E "RPATH|RUNPATH"
           
