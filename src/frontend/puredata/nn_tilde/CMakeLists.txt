@@ -58,13 +58,13 @@ if (UNIX AND NOT APPLE)
         "libtorch_global_deps.so"
     )
 
-    if(CUDA_FOUND OR EXISTS "${TORCH_INSTALL_PREFIX}/lib/libtorch_cuda.so")
+    if(CUDA_FOUND)
         list(APPEND ESSENTIAL_LIBS
             "libtorch_cuda.so"
             "libc10_cuda.so"
-            "libtorch_cuda_linalg.so"
+            # "libtorch_cuda_linalg.so"
             "libcaffe2_nvrtc.so"
-            "libnvrtc-builtins.so"
+            "libnvrtc-builtins-6c5639ce.so.12.1" # FIXME
         )
     endif()
 
