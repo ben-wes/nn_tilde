@@ -22,31 +22,6 @@ if(VERSION)
     add_definitions(-DVERSION="${VERSION}")
 endif()
 
-if (APPLE)
-    set_target_properties(nn PROPERTIES
-        PREFIX ""
-        SUFFIX "~.pd_darwin"
-        BUILD_WITH_INSTALL_RPATH FALSE
-        LINK_FLAGS "-Wl,-rpath,@loader_path/"
-    )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
-endif()
-
-if(UNIX AND NOT APPLE)
-    set_target_properties(nn PROPERTIES 
-        PREFIX ""
-        SUFFIX "~.pd_linux"
-        BUILD_WITH_INSTALL_RPATH TRUE
-        INSTALL_RPATH_USE_LINK_PATH TRUE
-        INSTALL_RPATH "$ORIGIN"
-    )
-endif()
-
-if (MSVC)
-    set_target_properties(nn PROPERTIES PREFIX "" SUFFIX "~.dll")
-endif()
-
 # COPY HELP FILES
 add_custom_command(TARGET nn POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -55,12 +30,22 @@ add_custom_command(TARGET nn POST_BUILD
     COMMENT "Copy Help File"
 )
 
-if (APPLE) # COPY TORCH DYLIB IN THE LOADER FOLDER
+if (APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
+
     add_custom_command(
         TARGET nn
         POST_BUILD
         COMMAND cp "${TORCH_INSTALL_PREFIX}/lib/*.dylib" "${CMAKE_CURRENT_BINARY_DIR}/"
         COMMENT "Copy Torch Libraries"
+    )
+
+    set_target_properties(nn PROPERTIES
+        PREFIX ""
+        SUFFIX "~.pd_darwin"
+        BUILD_WITH_INSTALL_RPATH FALSE
+        LINK_FLAGS "-Wl,-rpath,@loader_path/"
     )
 endif()
 
@@ -97,7 +82,6 @@ if (UNIX AND NOT APPLE)
     endforeach()
     add_dependencies(nn copy_torch_libs)
 
-    # Set proper RPATH
     set_target_properties(nn PROPERTIES 
         PREFIX ""
         SUFFIX "~.pd_linux"
@@ -126,7 +110,7 @@ if(MSVC)
         "torch_global_deps.dll"
     )
 
-    # Add CUDA DLLs only if CUDA is found
+    # CUDA DLL setup
     if(CUDA_FOUND OR EXISTS "${TORCH_INSTALL_PREFIX}/lib/torch_cuda.dll")
         list(APPEND REQUIRED_DLLS
             # PyTorch CUDA DLLs
@@ -134,24 +118,17 @@ if(MSVC)
             "c10_cuda.dll"
             # Core CUDA Runtime DLLs
             "cudart64_12.dll"
-            # "cublas64_12.dll"
-            # "cublasLt64_12.dll"
-            # Additional CUDA DLLs for data transfer/compute
+            # Additional CUDA DLLs
             "cudnn64_9.dll"
             "cudnn_graph64_9.dll"
             "cudnn_engines_precompiled64_9.dll"
             "cudnn_engines_runtime_compiled64_9.dll"
             "cudnn_heuristic64_9.dll"
-            # "nvrtc64_120_0.dll"
             "nvrtc-builtins64_120.dll"
             "cudadevrt.dll"
-            # "cusparse64_12.dll"
-            # "cufft64_11.dll"
-            # "cusolver64_11.dll"
-            # "curand64_10.dll"
         )
 
-        # Try to find VC Runtime from environment variable first
+        # VC Runtime handling
         if(DEFINED ENV{VCREDIST_PATH} AND EXISTS "$ENV{VCREDIST_PATH}/vcruntime140_1.dll")
             message(STATUS "Found VC Runtime at: $ENV{VCREDIST_PATH}")
             list(APPEND REQUIRED_DLLS "$ENV{VCREDIST_PATH}/vcruntime140_1.dll")
@@ -159,7 +136,7 @@ if(MSVC)
             message(WARNING "VC Runtime not found in VCREDIST_PATH")
         endif()
 
-        # Check CUDA installation for runtime DLLs
+        # CUDA runtime DLL handling
         if(DEFINED ENV{CUDA_PATH})
             file(GLOB CUDA_RUNTIME_DLLS "$ENV{CUDA_PATH}/bin/*.dll")
             foreach(CUDA_DLL ${CUDA_RUNTIME_DLLS})
@@ -189,6 +166,8 @@ if(MSVC)
             )
         endif()
     endforeach()
+
+    set_target_properties(nn PROPERTIES PREFIX "" SUFFIX "~.dll")
 endif()
 
 if (CMAKE_OSX_ARCHITECTURES STREQUAL "arm64")
