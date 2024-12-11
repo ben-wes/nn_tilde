@@ -90,6 +90,7 @@ jobs:
             gcc \
             g++ \
             tzdata
+
           echo "CC=gcc" >> $GITHUB_ENV
           echo "CXX=g++" >> $GITHUB_ENV
 
@@ -111,8 +112,6 @@ jobs:
           
       - name: Setup torch for AMD64
         run: |
-          apt-get update
-          apt-get install -y libgomp1
           CUDA_URL="https://download.pytorch.org/libtorch/cu124/libtorch-shared-with-deps-2.5.1%2Bcu124.zip"
           curl -L $CUDA_URL -o libtorch.zip
           unzip libtorch.zip
@@ -159,14 +158,14 @@ jobs:
           # Move all built files
           mv build/frontend/puredata/nn_tilde/nn~.pd_linux nn_tilde/
           mv build/frontend/puredata/nn_tilde/nn~-help.pd nn_tilde/
-          mv build/frontend/puredata/nn_tilde/lib*.so* nn_tilde/
+          # mv build/frontend/puredata/nn_tilde/lib*.so* nn_tilde/
           
           # Copy the specifically hashed libraries from libtorch
-          cp $TORCH_PATH/lib/libcudart-*.so.* nn_tilde/
-          cp $TORCH_PATH/lib/libcublas-*.so.* nn_tilde/
-          cp $TORCH_PATH/lib/libcublasLt-*.so.* nn_tilde/
+          # cp $TORCH_PATH/lib/libcudart-*.so.* nn_tilde/
+          # cp $TORCH_PATH/lib/libcublas-*.so.* nn_tilde/
+          # cp $TORCH_PATH/lib/libcublasLt-*.so.* nn_tilde/
           
-          cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-a34b3233.so.1
+          # cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-a34b3233.so.1
 
           # First check PyTorch's original library
           # echo "Original PyTorch CUDA library segments:"
