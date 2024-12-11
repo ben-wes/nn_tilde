@@ -90,6 +90,7 @@ jobs:
             gcc \
             g++ \
             tzdata
+
           echo "CC=gcc" >> $GITHUB_ENV
           echo "CXX=g++" >> $GITHUB_ENV
 
@@ -111,8 +112,6 @@ jobs:
           
       - name: Setup torch for AMD64
         run: |
-          apt-get update
-          apt-get install -y libgomp1
           CUDA_URL="https://download.pytorch.org/libtorch/cu124/libtorch-shared-with-deps-2.5.1%2Bcu124.zip"
           curl -L $CUDA_URL -o libtorch.zip
           unzip libtorch.zip
@@ -159,14 +158,14 @@ jobs:
           # Move all built files
           mv build/frontend/puredata/nn_tilde/nn~.pd_linux nn_tilde/
           mv build/frontend/puredata/nn_tilde/nn~-help.pd nn_tilde/
-          mv build/frontend/puredata/nn_tilde/lib*.so* nn_tilde/
+          # mv build/frontend/puredata/nn_tilde/lib*.so* nn_tilde/
           
           # Copy the specifically hashed libraries from libtorch
-          cp $TORCH_PATH/lib/libcudart-*.so.* nn_tilde/
-          cp $TORCH_PATH/lib/libcublas-*.so.* nn_tilde/
-          cp $TORCH_PATH/lib/libcublasLt-*.so.* nn_tilde/
+          # cp $TORCH_PATH/lib/libcudart-*.so.* nn_tilde/
+          # cp $TORCH_PATH/lib/libcublas-*.so.* nn_tilde/
+          # cp $TORCH_PATH/lib/libcublasLt-*.so.* nn_tilde/
           
-          cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-a34b3233.so.1
+          # cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-a34b3233.so.1
 
           # First check PyTorch's original library
           # echo "Original PyTorch CUDA library segments:"
@@ -177,22 +176,22 @@ jobs:
           # echo "Looking for non-aligned segments:"
           # readelf -l nn_tilde/libtorch_cuda.so | grep LOAD | awk '{if ($2 % 4096 != 0) print $0}'
 
-          strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
-          echo "Checking AMD64 package dependencies:"
-          ldd nn_tilde/nn~.pd_linux || true
+          # strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
+          # echo "Checking AMD64 package dependencies:"
+          # ldd nn_tilde/nn~.pd_linux || true
           
-          echo -e "\nDetailed CUDA dependency information:"
-          echo "For nn~.pd_linux:"
-          readelf -d nn_tilde/nn~.pd_linux
-          # echo -e "\nFor libtorch_cuda.so:"
-          # readelf -d nn_tilde/libtorch_cuda.so
-          # echo -e "\nFor libtorch_cpu.so:"
-          # readelf -d nn_tilde/libtorch_cpu.so
-          echo -e "\nRPATH information:"
-          readelf -d nn_tilde/nn~.pd_linux | grep -E "RPATH|RUNPATH"
+          # echo -e "\nDetailed CUDA dependency information:"
+          # echo "For nn~.pd_linux:"
+          # readelf -d nn_tilde/nn~.pd_linux
+          # # echo -e "\nFor libtorch_cuda.so:"
+          # # readelf -d nn_tilde/libtorch_cuda.so
+          # # echo -e "\nFor libtorch_cpu.so:"
+          # # readelf -d nn_tilde/libtorch_cpu.so
+          # echo -e "\nRPATH information:"
+          # readelf -d nn_tilde/nn~.pd_linux | grep -E "RPATH|RUNPATH"
           
-          echo "Final package contents:"
-          ls -la nn_tilde/
+          # echo "Final package contents:"
+          # ls -la nn_tilde/
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
@@ -275,33 +274,33 @@ jobs:
           # Move all built files
           mv build/frontend/puredata/nn_tilde/nn~.pd_linux nn_tilde/
           mv build/frontend/puredata/nn_tilde/nn~-help.pd nn_tilde/
-          mv build/frontend/puredata/nn_tilde/lib*.so* nn_tilde/
+          # mv build/frontend/puredata/nn_tilde/lib*.so* nn_tilde/
           
-          if [ "${{ matrix.arch }}" = "amd64" ]; then
-            # AMD64-specific handling
-            cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-a34b3233.so.1
+          # if [ "${{ matrix.arch }}" = "amd64" ]; then
+          #   # AMD64-specific handling
+          #   # cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 nn_tilde/libgomp-a34b3233.so.1
 
-            strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
-            echo "Checking AMD64 package dependencies:"
-            ldd nn_tilde/nn~.pd_linux || true
-          else
-            # ARM64-specific handling
-            echo "Debug: Looking for OpenBLAS library..."
-            ls -la ${{ env.TORCH_PATH }}/lib/
-            aarch64-linux-gnu-strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
-            echo "Checking ARM64 package dependencies:"
-            echo "Dependencies for nn~.pd_linux:"
-            aarch64-linux-gnu-readelf -d nn_tilde/nn~.pd_linux
+          #   # strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
+          #   echo "Checking AMD64 package dependencies:"
+          #   ldd nn_tilde/nn~.pd_linux || true
+          # else
+          #   # ARM64-specific handling
+          #   echo "Debug: Looking for OpenBLAS library..."
+          #   ls -la ${{ env.TORCH_PATH }}/lib/
+          #   aarch64-linux-gnu-strip nn_tilde/nn~.pd_linux nn_tilde/lib*.so*
+          #   echo "Checking ARM64 package dependencies:"
+          #   echo "Dependencies for nn~.pd_linux:"
+          #   aarch64-linux-gnu-readelf -d nn_tilde/nn~.pd_linux
             
-            # Check all .so files
-            for lib in nn_tilde/*.so; do
-              echo -e "\nDependencies for $(basename $lib):"
-              aarch64-linux-gnu-readelf -d "$lib"
-            done
-          fi
+          #   # Check all .so files
+          #   for lib in nn_tilde/*.so; do
+          #     echo -e "\nDependencies for $(basename $lib):"
+          #     aarch64-linux-gnu-readelf -d "$lib"
+          #   done
+          # fi
           
-          echo "Final package contents:"
-          ls -la nn_tilde/
+          # echo "Final package contents:"
+          # ls -la nn_tilde/
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4

@@ -57,37 +57,37 @@ if (APPLE)
 endif()
 
 if (UNIX AND NOT APPLE)
-    set(ESSENTIAL_LIBS
-        "libtorch.so"
-        "libtorch_cpu.so"
-        "libc10.so"
-        "libtorch_global_deps.so"
-    )
+    # set(ESSENTIAL_LIBS
+    #     "libtorch.so"
+    #     "libtorch_cpu.so"
+    #     "libc10.so"
+    #     "libtorch_global_deps.so"
+    # )
 
-    # Copy essential Torch libraries
-    add_custom_target(copy_torch_libs)
-    foreach(LIB ${ESSENTIAL_LIBS})
-        add_custom_command(
-            TARGET copy_torch_libs
-            PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${TORCH_INSTALL_PREFIX}/lib/${LIB}"
-                "${CMAKE_CURRENT_BINARY_DIR}/${LIB}"
-            COMMENT "Copying ${LIB}"
-        )
-    endforeach()
-    add_dependencies(nn copy_torch_libs)
+    # # Copy essential Torch libraries
+    # add_custom_target(copy_torch_libs)
+    # foreach(LIB ${ESSENTIAL_LIBS})
+    #     add_custom_command(
+    #         TARGET copy_torch_libs
+    #         PRE_BUILD
+    #         COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    #             "${TORCH_INSTALL_PREFIX}/lib/${LIB}"
+    #             "${CMAKE_CURRENT_BINARY_DIR}/${LIB}"
+    #         COMMENT "Copying ${LIB}"
+    #     )
+    # endforeach()
+    # add_dependencies(nn copy_torch_libs)
 
     set_target_properties(nn PROPERTIES 
         PREFIX ""
         SUFFIX "~.pd_linux"
-        BUILD_WITH_INSTALL_RPATH TRUE
-        INSTALL_RPATH_USE_LINK_PATH TRUE
-        INSTALL_RPATH "$ORIGIN"
+    #     BUILD_WITH_INSTALL_RPATH TRUE
+    #     INSTALL_RPATH_USE_LINK_PATH TRUE
+    #     INSTALL_RPATH "$ORIGIN"
     )
 
     # Add libgomp as a link dependency
-    target_link_libraries(nn PRIVATE gomp)
+    # target_link_libraries(nn PRIVATE gomp)
 endif()
 
 if(MSVC)
