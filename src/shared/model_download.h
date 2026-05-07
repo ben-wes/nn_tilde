@@ -7,6 +7,7 @@
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 #include <thread>
+#include <functional>
 
 #ifndef MAX_DOWNLOADS
 #define MAX_DOWNLOADS 2
@@ -178,12 +179,16 @@ std::string ModelDownloader::get_string_from_api_callback(std::string &address) 
         if (res != CURLE_OK) {
             throw std::string("could not fetch available models from API. Code from API: ") + std::to_string(res);
         }
-        // Clean up
+        long http_code = 0;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
         curl_easy_cleanup(curl);
+        if (http_code < 200 || http_code >= 300) {
+            throw std::string("could not fetch available models from API (HTTP ") + std::to_string(http_code) + ")";
+        }
     } else {
         throw std::string("curl is not available ; cannot download models");
     }
-    return readBuffer; 
+    return readBuffer;
 }
 
 void ModelDownloader::reload() {
@@ -303,11 +308,11 @@ void download_thread(ModelDownloader *parent, std::string model_name, std::strin
     // create lock file, to not download two times the same model
     std::string lock_path = lock_path_from_target(target_path, model_name);
     FILE* lock_file = fopen(lock_path.c_str(), "w");
-    fputc('l', lock_file);
     if (!lock_file) {
-        parent->print_to_parent(std::string("could not open file for writing : ") + target_path, "cerr"); 
+        parent->print_to_parent(std::string("could not open lock file : ") + lock_path, "cerr");
         return;
     }
+    fputc('l', lock_file);
 
     try {
         CURL* curl;
@@ -333,18 +338,31 @@ void download_thread(ModelDownloader *parent, std::string model_name, std::strin
             
             // Perform the request
             res = curl_easy_perform(curl);
+            long http_code = 0;
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
             if (res != CURLE_OK) {
                 parent->print_to_parent("error during download : " + std::string(curl_easy_strerror(res)), "cerr");
                 fclose(file);
                 fclose(lock_file);
                 fs::remove(lock_path);
                 curl_easy_cleanup(curl);
+                fs::remove(target_path);
                 return;
-            } 
+            }
 
-            // Clean up
             fclose(file);
             curl_easy_cleanup(curl);
+
+            if (http_code < 200 || http_code >= 300) {
+                parent->print_to_parent(
+                    "download failed (HTTP " + std::to_string(http_code) + "): " + model_name,
+                    "cerr");
+                fs::remove(target_path);
+                fclose(lock_file);
+                fs::remove(lock_path);
+                return;
+            }
+
             if (is_file_empty(fs::path(target_path))) {
                 parent->print_to_parent("failed to download  " + model_name, "cerr");
                 fs::remove(target_path);

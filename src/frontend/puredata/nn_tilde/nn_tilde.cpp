@@ -413,11 +413,29 @@ bool nn_tilde_load_model(t_nn_tilde *x, const char *path)
   if (fullpath.empty())
     return false;
 
-  // Create and load new backend instance
+  // Create and load new backend instance (Backend::load may throw std::string or std::exception)
   auto new_model = std::make_unique<Backend>();
-  if (new_model->load(fullpath.c_str(), (double)sys_getsr()))
+  try
   {
-    pd_error(x, "error loading model %s", path);
+    if (new_model->load(fullpath.c_str(), (double)sys_getsr()))
+    {
+      pd_error(x, "error loading model %s", path);
+      return false;
+    }
+  }
+  catch (const std::string &e)
+  {
+    pd_error(x, "nn~: %s", e.c_str());
+    return false;
+  }
+  catch (const std::exception &e)
+  {
+    pd_error(x, "nn~: error loading model %s: %s", path, e.what());
+    return false;
+  }
+  catch (...)
+  {
+    pd_error(x, "nn~: unknown error loading model %s", path);
     return false;
   }
 
